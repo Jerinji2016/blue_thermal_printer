@@ -85,6 +85,7 @@ public class BlueThermalPrinterPlugin implements FlutterPlugin, ActivityAware,Me
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
     pluginBinding = binding;
+    setup(pluginBinding.getBinaryMessenger(), pluginBinding.getApplicationContext());
   }
 
   @Override
@@ -99,7 +100,8 @@ public class BlueThermalPrinterPlugin implements FlutterPlugin, ActivityAware,Me
             pluginBinding.getBinaryMessenger(),
             (Application) pluginBinding.getApplicationContext(),
             activityBinding.getActivity(),
-            activityBinding);
+            activityBinding
+    );
   }
 
   @Override
@@ -135,6 +137,25 @@ public class BlueThermalPrinterPlugin implements FlutterPlugin, ActivityAware,Me
       mBluetoothManager = (BluetoothManager) application.getSystemService(Context.BLUETOOTH_SERVICE);
       mBluetoothAdapter = mBluetoothManager.getAdapter();
       activityBinding.addRequestPermissionsResultListener(this);
+    }
+  }
+
+
+  private void setup(
+          final BinaryMessenger messenger,
+          final Context context
+  ) {
+    synchronized (initializationLock) {
+      Log.i(TAG, "setup");
+      this.context = context;
+      channel = new MethodChannel(messenger, NAMESPACE + "/methods");
+      channel.setMethodCallHandler(this);
+      stateChannel = new EventChannel(messenger, NAMESPACE + "/state");
+      stateChannel.setStreamHandler(stateStreamHandler);
+      EventChannel readChannel = new EventChannel(messenger, NAMESPACE + "/read");
+      readChannel.setStreamHandler(readResultsHandler);
+      mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+      mBluetoothAdapter = mBluetoothManager.getAdapter();
     }
   }
 
